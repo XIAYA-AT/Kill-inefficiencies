@@ -1,0 +1,194 @@
+import os
+import tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext
+from pathlib import Path
+
+class BatchRenameApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("文件批量重命名工具")
+        self.root.geometry("800x600")
+        
+        # 存储选择的文件
+        self.files = []
+        
+        # 创建界面组件
+        self.create_widgets()
+        
+        # 设置示例规则
+        self.setup_examples()
+
+    def create_widgets(self):
+        # 操作规则提示
+        rules_frame = tk.LabelFrame(self.root, text="操作规则说明", padx=5, pady=5)
+        rules_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        rules_text = (
+            "x{}：替换文件名（保留后缀）\n"
+            "n{}：替换后缀（保留文件名）\n"
+            "x+{}：在文件名后添加文字\n"
+            "n+{}：在原后缀后添加文字\n"
+            "x：使用原文件名\n"
+            "n：使用原后缀\n"
+            "*n：自动添加数字序号"
+        )
+        tk.Label(rules_frame, text=rules_text, justify=tk.LEFT).pack(anchor="w")
+
+        # 规则输入区域
+        input_frame = tk.Frame(self.root)
+        input_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        tk.Label(input_frame, text="重命名规则:").grid(row=0, column=0, sticky="w")
+        self.rule_entry = tk.Entry(input_frame, width=50)
+        self.rule_entry.grid(row=0, column=1, padx=5, sticky="ew")
+        input_frame.columnconfigure(1, weight=1)
+
+        # 按钮区域
+        btn_frame = tk.Frame(self.root)
+        btn_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        self.add_btn = tk.Button(btn_frame, text="添加文件", command=self.add_files)
+        self.add_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.execute_btn = tk.Button(btn_frame, text="执行重命名", command=self.execute_rename)
+        self.execute_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.clear_btn = tk.Button(btn_frame, text="清空列表", command=self.clear_list)
+        self.clear_btn.pack(side=tk.LEFT, padx=5)
+
+        # 文件列表区域
+        list_frame = tk.LabelFrame(self.root, text="待处理文件列表", padx=5, pady=5)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        self.listbox = tk.Listbox(list_frame)
+        self.listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # 日志区域
+        log_frame = tk.LabelFrame(self.root, text="执行日志", padx=5, pady=5)
+        log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        self.log_text = scrolledtext.ScrolledText(log_frame, height=10)
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.log_text.config(state=tk.DISABLED)
+
+    def setup_examples(self):
+        """设置示例规则"""
+        example_frame = tk.Frame(self.root)
+        example_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        tk.Label(example_frame, text="示例规则:").grid(row=0, column=0, sticky="w")
+        
+        example1 = tk.Button(example_frame, text="示例1", 
+                            command=lambda: self.rule_entry.insert(0, "x,x+{，添加文字例子},n,n+{.jpg}"))
+        example1.grid(row=0, column=1, padx=5)
+        
+        example2 = tk.Button(example_frame, text="示例2", 
+                            command=lambda: self.rule_entry.insert(0, "x{演示结果},n{.jpg}"))
+        example2.grid(row=0, column=2, padx=5)
+        
+        example3 = tk.Button(example_frame, text="多文件示例", 
+                            command=lambda: self.rule_entry.insert(0, "x+{*n},x+{前演示},x,x+{*n},x+{后演示},n{.jpg}"))
+        example3.grid(row=0, column=3, padx=5)
+
+    def add_files(self):
+        """添加文件到处理列表"""
+        files = filedialog.askopenfilenames()
+        if files:
+            for file in files:
+                if file not in self.files:
+                    self.files.append(file)
+                    self.listbox.insert(tk.END, os.path.basename(file))
+            self.log(f"已添加 {len(files)} 个文件")
+
+    def clear_list(self):
+        """清空文件列表"""
+        self.files.clear()
+        self.listbox.delete(0, tk.END)
+        self.log("已清空文件列表")
+
+    def execute_rename(self):
+        """执行重命名操作"""
+        rule_str = self.rule_entry.get().strip()
+        if not rule_str:
+            messagebox.showerror("错误", "请输入重命名规则")
+            return
+            
+        if not self.files:
+            messagebox.showerror("错误", "请先添加文件")
+            return
+            
+        # 解析规则
+        rules = [r.strip() for r in rule_str.replace("，", ",").split(",") if r.strip()]
+        self.log(f"开始处理 {len(self.files)} 个文件，应用规则: {', '.join(rules)}")
+        
+        # 处理每个文件
+        for idx, file_path in enumerate(self.files, 1):
+            try:
+                path = Path(file_path)
+                original_name = path.stem
+                original_ext = path.suffix
+                
+                new_name = original_name
+                new_ext = original_ext
+                
+                # 应用所有规则
+                for rule in rules:
+                    if rule.startswith("x{"):
+                        # 替换文件名
+                        new_name = rule[2:-1]
+                    elif rule.startswith("n{"):
+                        # 替换后缀
+                        new_ext = rule[2:-1]
+                    elif rule.startswith("x+{"):
+                        # 在文件名后添加文字
+                        new_name += rule[3:-1]
+                    elif rule.startswith("n+{"):
+                        # 在原后缀后添加文字
+                        new_ext += rule[3:-1]
+                    elif rule == "x":
+                        # 使用原文件名
+                        new_name = original_name
+                    elif rule == "n":
+                        # 使用原后缀
+                        new_ext = original_ext
+                    elif "*n" in rule:
+                        # 替换*n为序号
+                        rule = rule.replace("*n", str(idx))
+                        if rule.startswith("x+{"):
+                            new_name += rule[3:-1]
+                        elif rule.startswith("n+{"):
+                            new_ext += rule[3:-1]
+                
+                # 处理文件名冲突
+                new_file_name = f"{new_name}{new_ext}"
+                new_path = path.parent / new_file_name
+                counter = 1
+                
+                # 如果文件已存在，添加序号
+                while new_path.exists():
+                    new_file_name = f"{new_name}_{counter}{new_ext}"
+                    new_path = path.parent / new_file_name
+                    counter += 1
+                
+                # 执行重命名
+                path.rename(new_path)
+                self.log(f"重命名成功: {path.name} → {new_file_name}")
+                
+            except Exception as e:
+                self.log(f"处理文件 {path.name} 时出错: {str(e)}")
+        
+        self.log("批量重命名完成！")
+        self.files.clear()
+        self.listbox.delete(0, tk.END)
+
+    def log(self, message):
+        """添加日志到日志区域"""
+        self.log_text.config(state=tk.NORMAL)
+        self.log_text.insert(tk.END, message + "\n")
+        self.log_text.config(state=tk.DISABLED)
+        self.log_text.see(tk.END)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = BatchRenameApp(root)
+    root.mainloop()
