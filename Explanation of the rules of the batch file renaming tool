@@ -1,0 +1,42 @@
+Program Functionality Description
+Rename rule implementation:
+x{text}: completely replaces the filename (retains the suffix)
+n{text}: replace suffix completely (keep filename)
+x+{text}: add text after filename
+n+{text}: add text after the original suffix
+x: use original filename
+n: use original suffix
+*n: automatically add a numerical serial number (automatic numbering when processing multiple files)
+Operation flow:
+Input rules in the rule input box (multiple rules are separated by commas).
+Click “Add Files” button to select multiple files.
+Click “Rename” to start processing.
+View the execution result in the log area
+Technical features:
+Displaying the operation rule prompt at the top of the window
+Support multiple rules combination application (sequential execution)
+Automatic handling of file name conflicts (automatic addition of serial numbers)
+Detailed execution log display
+File list management (can be emptied to reselect)
+Provide sample rule buttons for quick testing
+Example of use:
+Example 1 button: x,x+{, add text example},n,n+{.jpg}
+Example 2 button: x{demo result},n{.jpg}
+Multi-file example button: x+{*n},x+{pre-demo},x,x+{*n},x+{post-demo},n{.jpg}
+Instructions for use
+After running the program, the interface is divided into four main areas:
+Top: rule description and usage example buttons
+Center: Rule input box and operation buttons
+Bottom left: list of files to be processed
+Lower right: execution log
+Operation flow:
+Input the rule (or use the example button)
+Click “Add File” to select a file.
+Click “Rename” to start processing.
+View the result in the log area
+Click “Empty List” to reselect files at any time.
+Note:
+Rules are case sensitive (x and n must be lower case).
+Multiple rules are separated by commas
+Serial numbers are automatically added when file names conflict
+Log area will show the detailed processing
